@@ -1,0 +1,5 @@
+@@flowname: 'PADFramework: ExcelCloser'
+External.RunFlow FlowId: '{ReplaceWithExcelCloserFlowId}' @Input_FilePath: Input_ConfigAddress @Output_Message=> Output_Message @Output_Status=> Output_Status
+IF Output_Status <> 200 THEN
+    SET ErrorMessage TO Output_Message
+END
