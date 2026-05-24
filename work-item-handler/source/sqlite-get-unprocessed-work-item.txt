@@ -1,0 +1,17 @@
+@@copilotGeneratedAction: 'False'
+Database.ExecuteSqlStatement.ConnectAndExecute ConnectionString: Input_ConnectionString Statement: $'''SELECT
+    wi.Id
+FROM
+    WorkItem wi
+INNER JOIN Project p ON wi.ProjectId = p.Id
+INNER JOIN Flow f ON wi.FlowId = f.Id
+WHERE
+    wi.Number = \'%Input_WorkItemNumber%\'
+    AND wi.Processed = 0
+    AND p.ProjectNumber = \'%Input_ProjectName%\'
+    AND f.Name = \'%Input_FlowName%\'''' Timeout: 30 Result=> Table_WorkItemId
+IF (Table_WorkItemId.IsEmpty) = (True) THEN
+    GOTO 'Exit'
+END
+SET Output_WorkItemId TO Table_WorkItemId[0]['Id']
+LABEL 'Exit'

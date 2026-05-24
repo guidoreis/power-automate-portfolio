@@ -1,0 +1,66 @@
+SET ErrorMessage TO ''
+Text.ToNumber Text: $'''\'\''''
+    ON ERROR
+        CALL GetSubflowName
+    END
+BLOCK 
+ON BLOCK ERROR all
+    SET Log_Message TO $'''TRACE'''
+    CALL Logger
+END
+    **REGION Base Logger
+    # Creating base logger with all log levels enabled so we can actually log errors/information from Config if it fails.
+    SET Config_LoggerObject TO {{ }}
+    SET Config_LoggerObject[$'''LogLevels'''] TO $'''TRACE,DEBUG,INFO,WARN,ERROR,FATAL'''
+    SET Config_LoggerObject['ErrorLogLevels'] TO $'''ERROR,TRACE,FATAL'''
+    **ENDREGION
+    **REGION Log file path
+    System.GetEnvironmentVariable.GetEnvironmentVariable Name: $'''COMPUTERNAME''' Value=> ComputerName
+    SWITCH Log_Type
+        CASE = $'''Log File'''
+            SET Log_Path TO $'''%LogsDirectory%\\%DateStamp%_%FlowName%_%ComputerName%.log'''
+        CASE = $'''CSV File'''
+            SET Log_Path TO $'''%LogsDirectory%\\%DateStamp%_%FlowName%_%ComputerName%.csv'''
+    END
+    **ENDREGION
+    /# Adjust the parameters according to your external config store.
+When reading configs from a cloud-based store (SharePoint or Dataverse), be sure to change the flow appropriately as well. #/
+    @@flowname: 'PADFramework: ConfigReaderLocalConnectors'
+External.RunFlow FlowId: '{ReplaceWithConfigReaderFlowId}' @Input_ConfigType: Config_Type @Input_ConfigPath: Config_Path @Input_ConfigAddress: Config_Address @Input_ProjectName: ProjectName @Output_ConfigObject=> Config_Object @Output_Message=> Output_Message @Output_Status=> Output_Status
+    IF Output_Status <> 200 THEN
+        SET ErrorMessage TO Output_Message
+        GOTO 'Exit'
+    END
+    SET Config_RecipientObject TO Config_Object['Recipient']
+    SET Config_LoggerObject TO Config_Object['Logger']
+    SET Config_MaxErrorCountObject TO Config_Object['MaxErrorCount']
+    IF Config_Type <> $'''JSON''' THEN
+        # Conversion needed in case the objects are stored as JSON strings in configs (e.g. Dataverse, Database, SharePoint, Excel)
+        Variables.ConvertJsonToCustomObject Json: Config_RecipientObject CustomObject=> Config_RecipientObject
+        Variables.ConvertJsonToCustomObject Json: Config_LoggerObject CustomObject=> Config_LoggerObject
+        Variables.ConvertJsonToCustomObject Json: Config_MaxErrorCountObject CustomObject=> Config_MaxErrorCountObject
+    END
+    IF Contains(Config_Object, $'''ScreenshotsPath''', False) THEN
+        SET Config_ScreenshotsPath TO Config_Object['ScreenshotsPath']
+    END
+    IF Contains(Config_Object, $'''URL''', False) THEN
+        SET Config_URLObject TO Config_Object['URL']
+        IF Config_Type <> $'''JSON''' THEN
+            # Conversion needed in case the objects are stored as JSON strings in configs (e.g. Dataverse, Database, SharePoint, Excel)
+            Variables.ConvertJsonToCustomObject Json: Config_URLObject CustomObject=> Config_URLObject
+        END
+    END
+    IF Contains(Config_Object, $'''HTMLTemplatePath''', False) THEN
+        SET Config_HTMLTemplatePath TO Config_Object['HTMLTemplatePath']
+    END
+    IF Contains(Config_Object, $'''EmailAccount''', False) THEN
+        SET Config_EmailAccount TO Config_Object['EmailAccount']
+    END    
+    /# Environment values:
+- PROD
+- TEST
+- DEV
+#/
+    SET Config_Environment TO Config_Object['Environment']
+END
+LABEL 'Exit'

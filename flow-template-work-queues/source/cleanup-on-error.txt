@@ -1,0 +1,23 @@
+SET ErrorMessage TO ''
+Text.ToNumber Text: $'''\'\''''
+    ON ERROR
+        CALL GetSubflowName
+    END
+SET Log_Message TO $'''DEBUG;;;Start'''
+CALL Logger
+BLOCK 
+ON BLOCK ERROR all
+    SET Log_Message TO $'''TRACE'''
+    CALL Logger
+END
+    # If needed, call `TakeScreenshot` subflow to take a screenshot before calling any `Close*` subflows (except CloseExcel).
+    WorkQueues.UpdateProcessingNotes.WithProcessingNotes WorkQueueItem: WorkQueueItem ProcessingNotes: $'''Status: %WorkItem_Status%; Message: %WorkItem_Message%'''
+    CALL PrepareSystem
+    IF IsNotEmpty(ErrorMessage) THEN
+        GOTO 'Exit'
+    END
+END
+LABEL 'Exit'
+SET Log_Message TO $'''DEBUG;;;End'''
+CALL Logger
+Variables.RemoveItemFromList.RemoveItemFromListByIndex ItemIndex: List_SubflowNames.Count - 1 List: List_SubflowNames

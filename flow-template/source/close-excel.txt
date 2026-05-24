@@ -1,0 +1,29 @@
+SET ErrorMessage TO ''
+Text.ToNumber Text: $'''\'\''''
+    ON ERROR
+        CALL GetSubflowName
+    END
+SET Log_Message TO $'''DEBUG;;;Start'''
+CALL Logger
+BLOCK 
+ON BLOCK ERROR all
+    SET Log_Message TO $'''TRACE'''
+    CALL Logger
+END
+    @@flowname: 'PADFramework: ExcelCloser'
+External.RunFlow FlowId: '{ReplaceWithExcelCloserFlowId}' WaitToComplete: True @Input_ExcelInstance: ExcelToClose @Output_Message=> Output_Message @Output_Status=> Output_Status
+    IF Output_Status <> 200 THEN
+        SET ErrorMessage TO Output_Message
+        GOTO 'Exit'
+    END
+    Variables.IncreaseVariable Value: ExcelRestartCount IncrementValue: 1
+    IF ExcelRestartCount >= Config_MaxErrorCountObject['Excel'] THEN
+        SET Log_Message TO $'''FATAL;;;Excel has been restarted %ExcelRestartCount% time(s). Assuming it has fallen into an infinite loop and stopping the flow.'''
+        CALL Logger
+        CALL ThrowFatalError
+    END
+END
+LABEL 'Exit'
+SET Log_Message TO $'''DEBUG;;;End'''
+CALL Logger
+Variables.RemoveItemFromList.RemoveItemFromListByIndex ItemIndex: List_SubflowNames.Count - 1 List: List_SubflowNames
