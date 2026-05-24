@@ -1,8 +1,8 @@
-# ⚡ Power Automate Desktop Portfolio — RPA Studies
+# Power Automate Desktop Portfolio — RPA Studies
 
 Power Automate Desktop flows for study and reference.
 
-## 📚 Content
+## Content
 
 | Flow | Description |
 |------|-------------|
@@ -20,7 +20,7 @@ Power Automate Desktop flows for study and reference.
 | screenshot-maker | Automated screenshots |
 | work-item-handler | Work item processing |
 
-## 🛠️ Technologies
+## Technologies
 
 - Power Automate Desktop
 - Power Platform
